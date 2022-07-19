@@ -87,6 +87,29 @@ textarea {
    Author's custom styles
    ========================================================================== */
 
+.mower-simulation-wrapper {
+  max-width: 1100px;
+  margin: 60px auto;
+  display: grid;
+  grid-template-columns: 70% 30%;
+}
+
+.mower-simulation-world {
+  padding: 0 0 30px;
+}
+
+.mower-simulation-world-buttons,
+.mower-simulation-code-buttons {
+  padding: 10px 0 0;
+}
+
+.mower-simulation-world-entry,
+.mower-simulation-code-entry {
+  width: 100%;
+  min-height: 150px;
+}
+
+
 /* ==========================================================================
    Helper classes
    ========================================================================== */
@@ -260,4 +283,3 @@ textarea {
     page-break-after: avoid;
   }
 }
-

@@ -13,8 +13,26 @@
 
 <body>
 
-  <!-- Add your site or application content here -->
-  <p>Hello world! This is HTML5 Boilerplate.</p>
+  <div class="mower-simulation-wrapper">
+    <canvas class="mower-simulation-view"></canvas>
+
+    <div class="mower-simulation-controls">
+      <form class="mower-simulation-world">
+        <textarea class="mower-simulation-world-entry"></textarea>
+        <div class="mower-simulation-world-buttons">
+          <button type="button" id="CreateWorld">Create this world</button>
+        </div>
+      </form>
+      <form class="mower-simulation-code">
+        <textarea class="mower-simulation-code-entry"></textarea>
+        <div class="mower-simulation-code-buttons">
+          <button type="button" id="RunCode">Run code</button>
+          <button type="button" id="ClearCode">Clear code</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="js/vendor/modernizr-3.11.2.min.js"></script>
   <script src="js/plugins.js"></script>
   <script src="js/main.js"></script>
