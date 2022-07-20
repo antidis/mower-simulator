@@ -318,10 +318,12 @@ class MowerSimulator extends World {
   }
 
   mow() {
-    super.queryCoords(
-      this.mowerPosition[0],
-      this.mowerPosition[1]
-    ).addObject(LawnItems.mowedGrass);
+    if (this.isObjectAtCurrentMowerPosition(LawnItems.grass)) {
+      super.queryCoords(
+        this.mowerPosition[0],
+        this.mowerPosition[1]
+      ).addObject(LawnItems.mowedGrass);
+    }
   }
 
   moveEnd() {
