@@ -113,6 +113,7 @@ textarea {
 .mower-simulation-code-entry {
   width: 100%;
   min-height: 150px;
+  font-family: monospace;
 }
 
 

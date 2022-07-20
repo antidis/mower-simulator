@@ -174,7 +174,6 @@ class MowerSimulator extends World {
 
   placeMower() {
     this.mowerPosition = [ this.startPosition[0], this.startPosition[1]];
-    console.log(this.mowerPosition);
     // Check surrounds for position of guide wire
     [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach((orientation) => {
       let queryPoint = super.queryCoords(this.startPosition[0] + orientation[0], this.startPosition[1] + orientation[1]);
@@ -241,19 +240,19 @@ class MowerSimulator extends World {
   }
 
   isObjectAtPosition(objectName, x, y) {
-    return super.queryPosition(x, y).hasObject(objectName);
+    return super.queryCoords(x, y).hasObject(objectName);
   }
 
   isObjectAtCurrentMowerPosition(objectName) {
-    return isObjectAtPosition(objectName, this.mowerPosition[0], this.mowerPosition[1]);
+    return this.isObjectAtPosition(objectName, this.mowerPosition[0], this.mowerPosition[1]);
   }
 
   isMowerAtBaseStation() {
-    return isObjectAtCurrentMowerPosition(LawnItems.baseStation);
+    return this.isObjectAtCurrentMowerPosition(LawnItems.baseStation);
   }
 
   isCurrentCellMowed() {
-    return isObjectAtCurrentMowerPosition(LawnItems.mowedGrass);
+    return this.isObjectAtCurrentMowerPosition(LawnItems.mowedGrass);
   }
 
   isCurrentSpaceMowed() {
@@ -281,8 +280,8 @@ class MowerSimulator extends World {
 
   moveMower(direction, checkingFunction, coordinatesFunction) {
     this.mow();
-    let newMowerPosition = coordinatesFunction();
-    if (checkingFunction()) {
+    let newMowerPosition = coordinatesFunction.apply(this);
+    if (checkingFunction.apply(this)) {
       this.mowerPosition = newMowerPosition;
     } else {
       alert(`Tried to ${direction} mower outside of bounds, to [${newMowerPosition[0]}, ${newMowerPosition[1]}]`);
@@ -307,7 +306,7 @@ class MowerSimulator extends World {
   }
 
   mow() {
-    super.queryPosition(
+    super.queryCoords(
       this.mowerPosition[0],
       this.mowerPosition[1]
     ).addObject(LawnItems.mowedGrass);
@@ -319,6 +318,7 @@ class MowerSimulator extends World {
     } else {
       this.usePower();
     }
+    this.draw();
   }
 
   draw() {
@@ -417,7 +417,6 @@ function drawLawnSquare(lawnItems, squareDetails, canvasEl) {
 function drawMower(w, orientation, canvasEl) {
   if (canvasEl.getContext) {
     let ctx = canvasEl.getContext("2d");
-    console.log(w);
     let squareDetails = determineLawnSquareDetails(w, canvasEl);
     let quarterSquareWidth = squareDetails.width / 4;
     let quarterSquareHeight = squareDetails.height / 4;
@@ -446,7 +445,7 @@ function drawMower(w, orientation, canvasEl) {
       thirdPoint.y = Math.floor(mowerBounds.top + quarterSquareHeight);
       let mowerIsLeft = (orientation[0] === -1);
       firstPoint.x = mowerIsLeft ? mowerBounds.right : mowerBounds.left;
-      secondPoint.x = mowerIsLeft.x;
+      secondPoint.x = firstPoint.x;
       thirdPoint.x = mowerIsLeft ? mowerBounds.left : mowerBounds.right;
     }
 
