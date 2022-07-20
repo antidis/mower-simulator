@@ -94,6 +94,12 @@ textarea {
   grid-template-columns: 70% 30%;
 }
 
+.mower-simulation-view {
+  height: 100%;
+  width: 100%;
+  min-height: 600px;
+}
+
 .mower-simulation-world {
   padding: 0 0 30px;
 }

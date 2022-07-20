@@ -61,6 +61,7 @@ class World {
       this[optKey] = opts[optKey];
     });
     this.constructWorld();
+    this.canvasEl = document.querySelector(this.query);
   }
 
   constructWorld() {
@@ -138,7 +139,21 @@ class World {
   }
 
   draw() {
-
+    this.canvasEl.width = this.canvasEl.offsetWidth;
+    this.canvasEl.height = this.canvasEl.offsetHeight;
+    let widthInSquares = this.worldObject.length;
+    let heightInSquares = this.worldObject[0].length;
+    for (let i = 0; i < widthInSquares; i++) {
+      for (let j = 0; j < heightInSquares; j++) {
+        let squareDetails = determineLawnSquareDetails({
+          x: i,
+          y: j,
+          width: widthInSquares,
+          height: heightInSquares
+        }, this.canvasEl);
+        drawLawnSquare(this.worldObject[i][j], squareDetails, this.canvasEl);
+      }
+    }
   }
 }
 
@@ -158,7 +173,8 @@ class MowerSimulator extends World {
   }
 
   placeMower() {
-    this.mowerPosition = this.startPosition;
+    this.mowerPosition = [ this.startPosition[0], this.startPosition[1]];
+    console.log(this.mowerPosition);
     // Check surrounds for position of guide wire
     [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach((orientation) => {
       let queryPoint = super.queryCoords(this.startPosition[0] + orientation[0], this.startPosition[1] + orientation[1]);
@@ -305,6 +321,19 @@ class MowerSimulator extends World {
     }
   }
 
+  draw() {
+    super.draw();
+    let widthInSquares = this.worldObject.length;
+    let heightInSquares = this.worldObject[0].length;
+    let mowerSquareDetails = {
+      x: this.mowerPosition[0],
+      y: this.mowerPosition[1],
+      width: widthInSquares,
+      height: heightInSquares
+    };
+    drawMower(mowerSquareDetails, this.mowerOrientation, this.canvasEl);
+  }
+
 }
 
 document.querySelector("#CreateWorld").addEventListener("click", (e) => {
@@ -312,6 +341,7 @@ document.querySelector("#CreateWorld").addEventListener("click", (e) => {
     world: document.querySelector(".mower-simulation-world-entry").value,
     query: ".mower-simulation-view"
   });
+  theWorld.draw();
   e.preventDefault();
   return false;
 });
@@ -328,3 +358,106 @@ document.querySelector("#ClearCode").addEventListener("click", (e) => {
   e.preventDefault();
   return false;
 });
+
+function determineLawnSquareDetails(w, canvasEl) {
+  let canvasWidth = canvasEl.width;
+  let canvasHeight = canvasEl.height;
+  let cellWidth = Math.floor(canvasWidth / w.width);
+  let cellHeight = Math.floor(canvasHeight / w.height);
+  let x = {
+    x: (cellWidth * w.x),
+    y: (cellHeight * w.y),
+    width: cellWidth,
+    height: cellHeight
+  };
+  return x;
+}
+
+function drawLawnSquare(lawnItems, squareDetails, canvasEl) {
+  if (canvasEl.getContext) {
+    let ctx = canvasEl.getContext("2d");
+    ctx.strokeStyle = "#eee";
+    ctx.fillStyle = lawnItems.hasObject(LawnItems.grass)
+      ? lawnItems.hasObject(LawnItems.mowedGrass)
+        ? "#a1df50" : "#37ae0f"
+      : lawnItems.hasObject(LawnItems.baseStation)
+        ? "#000" : "#fff";
+    ctx.fillRect(
+      squareDetails.x,
+      squareDetails.y,
+      squareDetails.width,
+      squareDetails.height
+    );
+    ctx.strokeRect(
+      squareDetails.x,
+      squareDetails.y,
+      squareDetails.width,
+      squareDetails.height
+    );
+    let letter;
+    if (lawnItems.hasObject(LawnItems.boundaryWire)) {
+      letter = "B";
+    }
+    if (lawnItems.hasObject(LawnItems.guideWire)) {
+      letter = (letter === "B") ? "J" : "G";
+    }
+    if (letter !== undefined) {
+      ctx.font = "20px Helvetica Neue";
+      ctx.fillStyle = "#000";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        letter,
+        squareDetails.x + (squareDetails.width / 2),
+        squareDetails.y + (squareDetails.height / 2)
+      );
+    }
+  }
+}
+
+function drawMower(w, orientation, canvasEl) {
+  if (canvasEl.getContext) {
+    let ctx = canvasEl.getContext("2d");
+    console.log(w);
+    let squareDetails = determineLawnSquareDetails(w, canvasEl);
+    let quarterSquareWidth = squareDetails.width / 4;
+    let quarterSquareHeight = squareDetails.height / 4;
+    let mowerBounds = {
+      left: Math.floor(squareDetails.x + quarterSquareWidth),
+      right: Math.ceil(squareDetails.x + squareDetails.width - quarterSquareWidth),
+      top: Math.floor(squareDetails.y + quarterSquareHeight),
+      bottom: Math.ceil(squareDetails.y + squareDetails.height - quarterSquareHeight)
+    };
+
+    let firstPoint = {};
+    let secondPoint = {};
+    let thirdPoint = {};
+
+    if (orientation[0] === 0) {
+      firstPoint.x = mowerBounds.left;
+      secondPoint.x = mowerBounds.right;
+      thirdPoint.x = Math.floor(mowerBounds.left + quarterSquareWidth);
+      let mowerIsUp = (orientation[1] === -1);
+      firstPoint.y = mowerIsUp ? mowerBounds.bottom : mowerBounds.top;
+      secondPoint.y = firstPoint.y;
+      thirdPoint.y = mowerIsUp ? mowerBounds.top : mowerBounds.bottom;
+    } else {
+      firstPoint.y = mowerBounds.top;
+      secondPoint.y = mowerBounds.bottom;
+      thirdPoint.y = Math.floor(mowerBounds.top + quarterSquareHeight);
+      let mowerIsLeft = (orientation[0] === -1);
+      firstPoint.x = mowerIsLeft ? mowerBounds.right : mowerBounds.left;
+      secondPoint.x = mowerIsLeft.x;
+      thirdPoint.x = mowerIsLeft ? mowerBounds.left : mowerBounds.right;
+    }
+
+    ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
+    ctx.strokeStyle = "#f00";
+    ctx.beginPath();
+    ctx.moveTo(firstPoint.x, firstPoint.y);
+    ctx.lineTo(secondPoint.x, secondPoint.y);
+    ctx.lineTo(thirdPoint.x, thirdPoint.y);
+    ctx.lineTo(firstPoint.x, firstPoint.y);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
