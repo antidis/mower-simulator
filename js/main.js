@@ -82,7 +82,7 @@ class World {
 
   constructWorldFromString() {
     let depth = this.world.length;
-    let width = this.world[0].length;
+    let width = Math.max.apply(null, this.world.map(s => s.length));
     this.worldObject = new Array(width);
     for (let i = 0; i < width; i++) {
       this.worldObject[i] = new Array(depth);
@@ -131,7 +131,8 @@ class World {
   }
 
   queryCoords(x, y) {
-    return this.worldObject[x][y];
+    let row = this.worldObject[x];
+    return (row === undefined) ? row : row[y];
   }
 
   constructWorldFromObject() {
@@ -166,7 +167,7 @@ class MowerSimulator extends World {
 
   static mowerMaxCharge = 40;
 
-  resetMowerSimulatior() {
+  resetMowerSimulator() {
     this.mowerOrientation = undefined;
     this.resetWorld();
     this.placeMower();
@@ -205,8 +206,18 @@ class MowerSimulator extends World {
     }
   }
 
-  areQueryCoordsMowable(x, y) {
-    return super.queryCoords(x, y).hasObjects();
+  getRemainingPower() {
+    return this.mowerCharge;
+  }
+
+  areQueryCoordsLawn(x, y) {
+    let coordsData = super.queryCoords(x, y);
+    return ((coordsData !== undefined) && coordsData.hasObjects());
+  }
+
+  isObjectAtPosition(objectName, x, y) {
+    let coordsData = super.queryCoords(x, y);
+    return ((coordsData !== undefined) && coordsData.hasObject(objectName));
   }
 
   coordinatesAhead() {
@@ -223,24 +234,30 @@ class MowerSimulator extends World {
     ];
   }
 
-  isSpaceAhead() {
+  isSpaceAhead(itemName) {
     let queryCoords = this.coordinatesAhead();
-    return this.areQueryCoordsMowable(
+    return this.isSpaceAbstration(
+      itemName,
       queryCoords[0],
       queryCoords[1]
     );
   }
 
-  isSpaceBehind() {
+  isSpaceBehind(itemName) {
     let queryCoords = this.coordinatesBehind();
-    return this.areQueryCoordsMowable(
+    return this.isSpaceAbstration(
+      itemName,
       queryCoords[0],
       queryCoords[1]
     );
   }
 
-  isObjectAtPosition(objectName, x, y) {
-    return super.queryCoords(x, y).hasObject(objectName);
+  isSpaceAbstration(itemName, x, y) {
+    if (itemName === undefined) {
+      return this.areQueryCoordsLawn(x, y);
+    } else {
+      return this.isObjectAtPosition(x, y);
+    }
   }
 
   isObjectAtCurrentMowerPosition(objectName) {
@@ -251,13 +268,8 @@ class MowerSimulator extends World {
     return this.isObjectAtCurrentMowerPosition(LawnItems.baseStation);
   }
 
-  isCurrentCellMowed() {
-    return this.isObjectAtCurrentMowerPosition(LawnItems.mowedGrass);
-  }
-
   isCurrentSpaceMowed() {
-    return super.queryCoords(this.mowerPosition[0], this.mowerPosition[1])
-      .hasObject(LawnItems.mowedGrass);
+    return this.isObjectAtCurrentMowerPosition(LawnItems.mowedGrass);
   }
 
   turnLeft() {
