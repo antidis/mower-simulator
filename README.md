@@ -167,7 +167,7 @@ this.turnLeft();
 this.forward();
 ```
 
-Reverse out the base station and keep going until you can’t go anymore, then go
+Reverse out the base station and keep going until you can’t go anymore, then go
 forward back until the base station.
 
 ```
