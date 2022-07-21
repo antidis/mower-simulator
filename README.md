@@ -130,6 +130,30 @@ Returns `true` or `false`. Note that, for the “J” square, both an `itemName`
 station) will return `true` for `LawnItems.grass`, even after the lawn has been
 mowed (where it will now also return `true` for `LawnItems.mowedGrass`).
 
+`this.directionToBase()`
+If the square the mower is on has a guide wire, this returns a hash containing
+the number of turns left, and the number of turns right, required to point the
+mower to the next guide wire square in the direction of the base. If the square
+does **not** have a guide wire, this returns `undefined`.
+
+An example return value is:
+
+```
+{
+  lefts: 1,
+  right: 3
+}
+```
+
+You can see how to use it in the example programs.
+
+`this.directionsAwayFromBase()`
+If the square the mower is on has a guide wire, **or** if the mower is at the
+base station, this returns a hash containing the number of turns left, and the
+number of turns right, required to point the mower to the next guide wire square
+in the direction away from the base station. If the square does **not** either
+have a guide wire or a base station, this returns `undefined`.
+
 ## Example programs
 
 Reverse out from the base station, turn 360 degrees, then go back in:
@@ -171,5 +195,24 @@ while (!this.isMowerAtBaseStation()) {
       this.turnRight();
     }
   }
+}
+```
+
+This program will always bring the mower back to the base, if the mower is on
+a guide wire, with the minimum amount of battery charge used.
+
+```
+while (this.isObjectAtCurrentMowerPosition(LawnItems.guideWire)) {
+  let directions = this.directionToBase();
+  if (directions.lefts < directions.rights) {
+    for (let i = 0; i < directions.lefts; i++) {
+      this.turnLeft();
+    }
+  } else {
+    for (let i = 0; i < directions.rights; i++) {
+      this.turnRight();
+    }    
+  }
+  this.forward();
 }
 ```

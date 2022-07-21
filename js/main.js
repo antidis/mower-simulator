@@ -19,6 +19,8 @@ class LawnItems {
     LawnItems.types.forEach((itemName) => {
       this.objectHash[itemName] = (opts[itemName] === undefined) ? false : opts[itemName];
     });
+    this.objectHash["guideWireDirectionToBase"] = opts["guideWireDirectionToBase"];
+    this.objectHash["guideWireDirectionAwayFromBase"] = opts["guideWireDirectionAwayFromBase"];
   }
 
   hasObject(itemName) {
@@ -44,9 +46,28 @@ class LawnItems {
   isEmpty() {
     return !this.hasObjects();
   }
+
+  guideWireDirectionToBase() {
+    return this.objectHash.guideWireDirectionToBase;
+  }
+
+  setGuideWireDirectionToBase(val) {
+    this.objectHash.guideWireDirectionToBase = val;
+  }
+
+  guideWireDirectionAwayFromBase() {
+    return this.objectHash.guideWireDirectionAwayFromBase;
+  }
+
+  setGuideWireDirectionAwayFromBase(val) {
+    this.objectHash.guideWireDirectionAwayFromBase = val;
+  }
+
 }
 
 class World {
+  static orientations = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+
   constructor(opts) {
     if (opts === undefined) {
       throw new Error("Options not specified.")
@@ -82,7 +103,7 @@ class World {
 
   constructWorldFromString() {
     let depth = this.world.length;
-    let width = Math.max.apply(null, this.world.map(s => s.length));
+    let width = Math.max.apply(null, this.world.map((s) => s.length));
     this.worldObject = new Array(width);
     for (let i = 0; i < width; i++) {
       this.worldObject[i] = new Array(depth);
@@ -97,6 +118,47 @@ class World {
     if (this.startPosition === undefined) {
       throw new Error("Could not find start position in world string.");
     }
+    this.plotGuideWireDirection();
+  }
+
+  coordDiff(first, second) {
+    return [
+      second[0] - first[0],
+      second[1] - first[1]
+    ];
+  }
+
+  plotGuideWireDirection() {
+    let oldCoords = this.startPosition;
+    let newCoords = this.unplottedGuideWireNearby(oldCoords[0], oldCoords[1]);
+    while (newCoords !== undefined) {
+      this.worldObject[oldCoords[0]][oldCoords[1]].setGuideWireDirectionAwayFromBase(this.coordDiff(oldCoords, newCoords));
+      this.worldObject[newCoords[0]][newCoords[1]].setGuideWireDirectionToBase(this.coordDiff(newCoords, oldCoords));
+
+      oldCoords = newCoords;
+      newCoords = this.unplottedGuideWireNearby(oldCoords[0], oldCoords[1]);
+    }
+  }
+
+  unplottedGuideWireNearby(x, y) {
+    return World.orientations.map(orientation => [x + orientation[0], y + orientation[1]])
+      .reduce(
+        (previousValue, currentValue) => {
+          let q = this.queryCoords(currentValue[0], currentValue[1]);
+          if (
+            (q !== undefined)
+            && q.hasObject(LawnItems.guideWire)
+            && (
+              (q.guideWireDirectionToBase() === undefined)
+              || (q.guideWireDirectionAwayFromBase() === undefined)
+            )
+          ) {
+            return currentValue;
+          } else {
+            return previousValue;
+          }
+        }
+      , undefined);
   }
 
   findObjectsInString(character) {
@@ -176,7 +238,7 @@ class MowerSimulator extends World {
   placeMower() {
     this.mowerPosition = [ this.startPosition[0], this.startPosition[1]];
     // Check surrounds for position of guide wire
-    [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach((orientation) => {
+    World.orientations.forEach((orientation) => {
       let queryPoint = super.queryCoords(this.startPosition[0] + orientation[0], this.startPosition[1] + orientation[1]);
       if ((queryPoint !== undefined) && queryPoint.hasObjects()) {
         if (queryPoint.hasObject(LawnItems.guideWire)) {
@@ -210,6 +272,10 @@ class MowerSimulator extends World {
     return this.mowerCharge;
   }
 
+  queryCurrentCoords() {
+    return super.queryCoords(this.mowerPosition[0], this.mowerPosition[1]);
+  }
+
   areQueryCoordsLawn(x, y) {
     let coordsData = super.queryCoords(x, y);
     return ((coordsData !== undefined) && coordsData.hasObjects());
@@ -218,6 +284,46 @@ class MowerSimulator extends World {
   isObjectAtPosition(objectName, x, y) {
     let coordsData = super.queryCoords(x, y);
     return ((coordsData !== undefined) && coordsData.hasObject(objectName));
+  }
+
+  directionAwayFromBase() {
+    if (this.isObjectAtCurrentMowerPosition(LawnItems.guideWire) || this.isObjectAtCurrentMowerPosition(LawnItems.baseStation)) {
+      let q = this.queryCurrentCoords();
+      if (q !== undefined) {
+        return this.leftsAndRightsToOrientation(this.mowerOrientation, q.guideWireDirectionAwayFromBase());
+      }
+    }
+  }
+
+  directionToBase() {
+    if (this.isObjectAtCurrentMowerPosition(LawnItems.guideWire)) {
+      let q = this.queryCurrentCoords();
+      if (q !== undefined) {
+        return this.leftsAndRightsToOrientation(this.mowerOrientation, q.guideWireDirectionToBase());
+      }
+    }
+  }
+
+  leftsAndRightsToOrientation(a, b) {
+    let lefts = 0;
+    let tr = {
+      x: a[0],
+      y: a[1]
+    };
+
+    while ((lefts < 4) && !((tr.x === b[0]) && (tr.y === b[1]))) {
+      lefts++;
+      let temp = tr.x;
+      tr.x = tr.y;
+      tr.y = temp * -1;
+    }
+
+    if (lefts !== 4) {
+      return {
+        lefts: lefts,
+        rights: ((4 - lefts) % 4)
+      }
+    }
   }
 
   coordinatesAhead() {
@@ -303,7 +409,7 @@ class MowerSimulator extends World {
 
   forward() {
     this.moveMower(
-      'advance',
+      "advance",
       this.isSpaceAhead,
       this.coordinatesAhead
     );
@@ -311,7 +417,7 @@ class MowerSimulator extends World {
 
   reverse() {
     this.moveMower(
-      'reverse',
+      "reverse",
       this.isSpaceBehind,
       this.coordinatesBehind
     );
